@@ -1,0 +1,4 @@
+port: "/dev/ttyUSB0"
+rate: 9600
+data: 8
+stop: 1

@@ -2,15 +2,17 @@
 #define SEQUENCE_MAX 32
 #define END_SEQUENCE -1
 
-int buttonInputs[] = { 2, 3, 4, 5 };
+int buttonInputs[] = { 8, 9, 10, 11 };
 int nInputs = 4;
 
-int ledOutputs[] = { 9, 10, 11, 12 };
+int ledOutputs[] = { 3, 4, 5, 6 };
 int nOutputs = 4;
 
-int beepOutput = 6;
+int beepOutput = 2;
 
 int sequence[SEQUENCE_MAX];
+
+int baseDelay = 500;
 
 void setup()
 {
@@ -29,6 +31,8 @@ void setup()
   {
     pinMode(ledOutputs[i], OUTPUT);
   }
+  
+  pinMode(beepOutput, OUTPUT);
 }
 
 void initSequence()
@@ -61,21 +65,32 @@ int checkButtons()
      }
    }
 
+   // Testar serial
+   while (Serial.available() > 0)
+   {
+     int n = Serial.read();
+
+     // Aceita serial entre '0' e '3'
+     if (n >= '0' && n <= '3')
+       button = n - '0';
+   }
+
    return button;
 }
 
 int noteToFreq(int note)
 {
-  return (int) pow(2, (double)note/12) * 440;
+  return (int) pow(2, (double)note/12) * 110;
 }
 
 // Toca uma melodia num alto falate ou buzzer
 void playMelody(int *mel, int *dur, int n)
 {
+  int basic_dur = 50;
   for(int i=0; i < n; i++)
   {
-    tone(beepOutput, noteToFreq(mel[i]), dur[i]*100);
-    delay(dur[i]*100);
+    tone(beepOutput, noteToFreq(mel[i]), dur[i]*basic_dur);
+    delay(dur[i]*basic_dur);
     noTone(beepOutput);
   }
 }
@@ -116,20 +131,19 @@ void beep(int button)
 {
   int freqs[] = {30, 32, 34, 37};
   int freq = noteToFreq(freqs[button]);
-  tone(beepOutput, freq, 1000);
-  delay(1000);
+  tone(beepOutput, freq, baseDelay);
+  delay(baseDelay);
   noTone(beepOutput);
 }
 
 void loop()
 {
   // Esperar inicio
-  delay(1000);
 
   Serial.println("Esperando aperto para iniciar");
   while (checkButtons() == -1)
   {
-    blinkLeds(300);
+    blinkLeds(baseDelay);
   }
 
   // Indicador de resposta correta
@@ -143,11 +157,11 @@ void loop()
   // Temos certeza do inicio do jogo aqui
   while (correct)
   {
-    delay(500);
+    delay(baseDelay/2);
     // Reseta todos os botoes
     for (int i=0; i < nOutputs; i++)
       digitalWrite(ledOutputs[i], LOW);
-    delay(500);
+    delay(baseDelay/2);
 
     // Toca uma sequencia
     int pos = 0;
@@ -162,24 +176,25 @@ void loop()
       Serial.println(led);
       beep(led);
       digitalWrite(ledOutputs[led], LOW);
-      delay(1000);
+      delay(baseDelay / (1 + (pos/1.0)) );
     }
 
     int nPressed = 0;
 
-    delay(1000);
 
     // Fazendo a leitura da resposta
     while (nPressed < pos && correct)
     {
+      delay(baseDelay/2);
       for (int i=0; i < nOutputs; i++)
         digitalWrite(ledOutputs[i], LOW);
+      delay(baseDelay/2);
 
       int button = checkButtons();
 
       while (button == -1)
       {
-          delay(200);
+          delay(baseDelay/2);
           button = checkButtons();
       }
 
